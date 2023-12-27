@@ -11,29 +11,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.lifecycle.lifecycleScope
 import com.example.snackbarjetpackcompose.ui.theme.SnackBarJetpackComposeTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val isShowing = remember { mutableStateOf(false) }
+//            val isShowing = remember { mutableStateOf(false) }
+            val snackbarHostState = remember { SnackbarHostState() }
 
             Column() {
                 Button(onClick = {
-                    isShowing.value = true
+                    lifecycleScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Hey look at snackbar",
+                            actionLabel = "Hide",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                 }) {
                     Text(text = "Show Snackbar")
                 }
 
-                SimpleSnackBarDemo(
-                    isShowing = isShowing.value,
-                    onHideSnackBar = {
-                        isShowing.value = false
-                    }
-                )
+
+                DecoupledSnackbarDemo(snackbarHostState = snackbarHostState)
+
+//                SimpleSnackBarDemo(
+//                    isShowing = isShowing.value,
+//                    onHideSnackBar = {
+//                        isShowing.value = false
+//                    }
+//                )
 
             }
 
@@ -48,6 +62,42 @@ class MainActivity : ComponentActivity() {
 //                }
 //            }
         }
+    }
+}
+
+
+@Composable
+fun DecoupledSnackbarDemo(
+    snackbarHostState: SnackbarHostState
+) {
+    ConstraintLayout(modifier = Modifier.fillMaxSize()) {
+        val snackbar = createRef()
+        SnackbarHost(
+            modifier = Modifier.constrainAs(snackbar) {
+                bottom.linkTo(parent.bottom)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            },
+            hostState = snackbarHostState, //the host state manages animation as well
+            snackbar = {
+                Snackbar(
+                    action = {
+                        TextButton(
+                            onClick = {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                            }
+                        ) {
+                            Text(
+                                text = "Hide",
+                                style = TextStyle(color = Color.White)
+                            )
+                        }
+                    }
+                ) {
+                    Text("Hey look snackbar")
+                }
+            }
+        )
     }
 }
 
